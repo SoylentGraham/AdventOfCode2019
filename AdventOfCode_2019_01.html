@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<link rel="stylesheet" type="text/css" href="Editor_win95.css" />
+<link rel="stylesheet" type="text/css" href="Editor_win95.css" />
 <style>
 </style>
 </head>
@@ -17,12 +17,32 @@
 		let Fuel = Math.floor(Mass) / 3;
 		Fuel = Math.floor( Fuel );
 		Fuel -= 2;
+		
+		if ( Fuel < 0 )
+			Fuel = 0;
+		
+		
 		if ( isNaN(Fuel) )
 			throw "Nan";
 		return Fuel;
 	}
 
-
+	function GetFuelConsumption_WithFuel(Mass)
+	{
+		const MassFuel = GetFuelConsumption(Mass);
+		let TotalFuel = MassFuel;
+		
+		//	mass fuel's fuel needs fuel.
+		let FuelFuel = MassFuel;
+		while ( FuelFuel > 0 )
+		{
+			const NextFuel = GetFuelConsumption( FuelFuel );
+			TotalFuel += NextFuel;
+			FuelFuel = NextFuel;
+		}
+		
+		return TotalFuel;
+	}
 
 	async function GetInputMasses()
 	{
@@ -47,6 +67,13 @@
 	{
 		const Fuel = GetFuelConsumption( Mass );
 		if ( Fuel != ExpectedFuel )
+		throw "Expected fuel " + ExpectedFuel + " but got " + Fuel;
+	}
+
+	function UnitTestMass_WithFuel(Mass,ExpectedFuel)
+	{
+		const Fuel = GetFuelConsumption_WithFuel( Mass );
+		if ( Fuel != ExpectedFuel )
 			throw "Expected fuel " + ExpectedFuel + " but got " + Fuel;
 	}
 
@@ -55,13 +82,23 @@
 		//	from the page
 		UnitTestMass( 1969, 654 );
 		UnitTestMass( 100756, 33583 );
-		
+
+		UnitTestMass_WithFuel( 14, 2 );
+		UnitTestMass_WithFuel( 1969, 966 );
+		UnitTestMass_WithFuel( 100756, 50346 );
+				
 		const InputMasses = await GetInputMasses();
 		const InputFuels = InputMasses.map( GetFuelConsumption );
 		
 		let TotalFuel = 0;
 		InputFuels.forEach( f => TotalFuel += f	);
 		console.log("Total Fuel = " + TotalFuel);
+		
+		const InputFuelFuels = InputMasses.map( GetFuelConsumption_WithFuel );
+		let TotalFuelFuel = 0;
+		InputFuelFuels.forEach( f => TotalFuelFuel += f	);
+		console.log("Total Fuel(with fuel) = " + TotalFuelFuel);
+		
 	}
 
 
