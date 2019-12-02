@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="Editor_win95.css" />
+<style>
+</style>
+</head>
+<body>
+	
+<script>
+	
+	const Op_Halt = 99;
+	const Op_Add = 0;
+	const Op_Mult = 1;
+	
+	function RunOp_Add(Memory,Op,a,b,out)
+	{
+		const aval = Memory[a];
+		const bval = Memory[b];
+		const Result = aval + bval;
+		Memory[out] = Result;
+	}
+
+	function RunOp_Mult(Memory,Op,a,b,out)
+	{
+		const aval = Memory[a];
+		const bval = Memory[b];
+		const Result = aval * bval;
+		Memory[out] = Result;
+	}
+
+	function RunInstructions(Memory,Op,a,b,out)
+	{
+		//	return false to halt
+		if ( Op == Op_Halt )
+			return false;
+		
+		if ( Op == Op_Add )
+			return RunOp_Add( ...arguments );
+		
+		if ( Op == Op_Mult )
+			return RunOp_Mult( ...arguments );
+			
+		throw "Unknown op " + Op;
+	}
+
+	function Run(Memory)
+	{
+		let Position = 0;
+		
+		let IterationSafety = 1000;
+		while ( IterationSafety-->0 )
+		{
+			const Instruction = Memory.slice( Position, Position+4 );
+			if ( RunInstructions( Memory, ...Instruction ) === false )
+				break;
+			Position += 4;
+		}
+		
+		if ( IterationSafety <= 0 )
+			throw "Run() went on too long";
+	}
+
+	function UnitTest_Run(Memory,ExpectedMatches)
+	{
+		Run( Memory );
+		
+		function TestMemory(Location)
+		{
+			const ExpectedValue = ExpectedMatches[Location];
+			const MemoryValue = Memory[Location];
+			if ( MemoryValue != ExpectedValue )
+				throw "Expected memory at " + Location + " to be " + ExpectedValue + " but is " + MemoryValue;
+		}
+		//	test expected values
+		Object.keys( ExpectedMatches ).forEach( TestMemory );
+	}
+
+	async function Run()
+	{
+		UnitTest_Run( [1,9,10,3,2,3,11,0,99,30,40,50], {0:2} );
+		UnitTest_Run( [2,3,0,3,99], {3:6} );
+		
+		
+	}
+
+	Run().then( console.log ).catch( console.error );
+
+</script>
+	
+</body>
+
