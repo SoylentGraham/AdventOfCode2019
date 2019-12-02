@@ -9,9 +9,10 @@
 	
 <script>
 	
+	
 	const Op_Halt = 99;
-	const Op_Add = 0;
-	const Op_Mult = 1;
+	const Op_Add = 1;
+	const Op_Mult = 2;
 	
 	function RunOp_Add(Memory,Op,a,b,out)
 	{
@@ -44,10 +45,9 @@
 		throw "Unknown op " + Op;
 	}
 
-	function Run(Memory)
+	function RunProgram(Memory)
 	{
 		let Position = 0;
-		
 		let IterationSafety = 1000;
 		while ( IterationSafety-->0 )
 		{
@@ -56,15 +56,15 @@
 				break;
 			Position += 4;
 		}
-		
+	 
 		if ( IterationSafety <= 0 )
 			throw "Run() went on too long";
 	}
 
 	function UnitTest_Run(Memory,ExpectedMatches)
 	{
-		Run( Memory );
-		
+		RunProgram( Memory );
+
 		function TestMemory(Location)
 		{
 			const ExpectedValue = ExpectedMatches[Location];
@@ -74,13 +74,16 @@
 		}
 		//	test expected values
 		Object.keys( ExpectedMatches ).forEach( TestMemory );
+
 	}
 
 	async function Run()
 	{
-		UnitTest_Run( [1,9,10,3,2,3,11,0,99,30,40,50], {0:2} );
-		UnitTest_Run( [2,3,0,3,99], {3:6} );
 		
+		UnitTest_Run( [1,9,10,3,2,3,11,0,99,30,40,50], {0:3500} );
+		UnitTest_Run( [1,0,0,0,99], {0:2} );
+		UnitTest_Run( [2,3,0,3,99], {3:6} );
+		UnitTest_Run( [1,1,1,4,99,5,6,0,99], {0:30} );
 		
 	}
 
