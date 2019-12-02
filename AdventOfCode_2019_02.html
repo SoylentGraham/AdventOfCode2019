@@ -91,10 +91,35 @@
 		//	replace position 1 with the value 12 and
 		//	replace position 2 with the value 2.
 		//	What value is left at position 0 after the program halts?
-		Day2Program[1] = 12;
-		Day2Program[2] = 2;
-		RunProgram( Day2Program );
-		console.log("Day2 mem@0", Day2Program[0] );
+		const Part1Memory = Day2Program.slice();
+		Part1Memory[1] = 12;
+		Part1Memory[2] = 2;
+		RunProgram( Part1Memory );
+		console.log("Day2 mem@0", Part1Memory[0] );
+		
+		//	part2
+		//	find the result where @0=19690720
+		//	noun = @1
+		//	verb = @2
+		const ExpectedOutput = 19690720;
+		for ( let Noun=0;	Noun<=99;	Noun++ )
+		{
+			for ( let Verb=0;	Verb<=99;	Verb++ )
+			{
+				const TestMemory = Day2Program.slice();
+				TestMemory[1] = Noun;
+				TestMemory[2] = Verb;
+				RunProgram(TestMemory);
+				const Output = TestMemory[0];
+				if ( Output == ExpectedOutput )
+				{
+					//	What is 100 * noun + verb? (For example, if noun=12 and verb=2, the answer would be 1202.
+					const Answer = (100 * Noun) + Verb;
+					console.log(`Found ${ExpectedOutput} verb=${Verb} noun=${Noun} Answer=${Answer}`);
+					return;
+				}
+			}
+		}
 	}
 
 	Run().then( console.log ).catch( console.error );
