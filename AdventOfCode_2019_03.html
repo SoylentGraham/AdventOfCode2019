@@ -43,8 +43,8 @@
 
 	//const MapSize = 11;
 	//const StartPos = [1,8];
-	const MapSize = 2000;
-	const StartPos = [1000,1000];
+	const MapSize = 25000;
+	const StartPos = [10000,10000];
 
 	function GetDelta(Instruction)
 	{
@@ -106,7 +106,7 @@
 	{
 		const Map = [];//new Array(MapSize);
 		for ( let i=0;	i<MapSize;	i++ )
-			Map[i] = new Array(MapSize).fill(0);
+			Map[i] = new Uint8Array(MapSize).fill(0);
 		const Intersections = [];
 		
 		function OnIntersection(xy,Bits)
@@ -165,9 +165,10 @@
 
 	async function Run()
 	{
-		EvaluteMap( [Map0_Wire1, Map0_Wire2], undefined/*[ [7,3],[4,5] ]*/, Map0_Distance );
-		EvaluteMap( [Map1_Wire1, Map1_Wire2], undefined, Map1_Distance );
-		EvaluteMap( [Map2_Wire1, Map2_Wire2], undefined, Map2_Distance );
+		//EvaluteMap( [Map0_Wire1, Map0_Wire2], undefined/*[ [7,3],[4,5] ]*/, Map0_Distance );
+		//EvaluteMap( [Map1_Wire1, Map1_Wire2], undefined, Map1_Distance );
+		//EvaluteMap( [Map2_Wire1, Map2_Wire2], undefined, Map2_Distance );
+		EvaluteMap( [Map3_Wire1, Map3_Wire2] );
 
 	}
 
