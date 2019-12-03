@@ -54,12 +54,44 @@
 		if ( Instruction.Direction == 'D' )	return [0,1];
 		throw "Unknown direction " + Instruction;
 	}
-	
-	function WritePath(Map,Path,WireIndex,OnCross)
+
+
+	function PositionMatch(a,b)
+	{
+		return (a[0]==b[0]) && (a[1]==b[1]);
+	}
+
+	function WalkPath(Map,Path,OnMovedToPosition)
 	{
 		const Pos = StartPos.slice();
-		
-		function WritePosition(Position)
+		let StepCount = 1;	//	gr: something wrong in my counting maybe, but count was off by 1
+		let Break = false;
+		function LogoThisMother(Instruction)
+		{
+			if ( Break === true )
+				return;
+			
+			const OldPos = Pos.slice();
+			const Delta = GetDelta( Instruction );
+			
+			for ( let d=1;	d<=Instruction.Count;	d++ )
+			{
+				if ( Break === true )
+					return;
+				//	this is a silly way to move
+				Pos[0] = OldPos[0]+(Delta[0]*d);
+				Pos[1] = OldPos[1]+(Delta[1]*d);
+				Break = (OnMovedToPosition( Pos, StepCount )===false);
+				StepCount++;
+			}
+		}
+		Path.forEach( LogoThisMother );
+	}
+
+
+	function WritePath(Map,Path,WireIndex,OnCross)
+	{
+		function WritePosition(Position,StepCount)
 		{
 			//	check bounds
 			const MapWidth = Map.length;
@@ -76,46 +108,51 @@
 			const WireBits = Map[x][y];
 			if ( WireBits != (1<<WireIndex) )
 			{
-				OnCross( [x,y], WireBits );
-			}
-			
-		}
-		
-		function LogoThisMother(Instruction)
-		{
-			const OldPos = Pos.slice();
-			const Delta = GetDelta( Instruction );
-			
-			for ( let d=0;	d<=Instruction.Count;	d++ )
-			{
-				//	this is a silly way to move
-				Pos[0] = OldPos[0]+(Delta[0]*d);
-				Pos[1] = OldPos[1]+(Delta[1]*d);
-				WritePosition( Pos );
+				OnCross( [x,y], WireBits, WireIndex, StepCount );
 			}
 		}
-		Path.forEach( LogoThisMother );
+		WalkPath( Map, Path, WritePosition );
 	}
 
-	function PositionMatch(a,b)
+	function CountStepsToTarget(Map,Path,Target)
 	{
-		return (a[0]==b[0]) && (a[1]==b[1]);
+		let Steps = false;
+		function MatchTargetPosition(Position,StepCount)
+		{
+			//	keep going
+			if ( !PositionMatch( Position, Target ) )
+				return;
+			
+			//	save & break
+			Steps = StepCount;
+			return false;
+		}
+		WalkPath( Map, Path, MatchTargetPosition );
+		return Steps;
 	}
+
+
 
 	function EvaluteMap(Paths,ExpectedIntersections,ClosestIntersectionToStart)
 	{
 		const Map = [];//new Array(MapSize);
 		for ( let i=0;	i<MapSize;	i++ )
+		{
+			//	get OOM if we have giant array of array (plus this is faster)
 			Map[i] = new Uint8Array(MapSize).fill(0);
+		}
 		const Intersections = [];
 		
-		function OnIntersection(xy,Bits)
+		function OnIntersection(xy,Bits,WireIndex,WireStepCount)
 		{
 			//	ignore where wires start
 			if ( PositionMatch(xy,StartPos) )
 				return;
 			console.log(`Intersection at ${xy} ${Bits}`);
-			Intersections.push(xy.slice());
+			
+			const Intersection = [ xy[0], xy[1], WireStepCount ];
+			
+			Intersections.push(Intersection);
 		}
 		
 		function ProcessPath(Path,PathIndex)
@@ -137,6 +174,8 @@
 			}
 		}
 		
+		
+		//	part1 evalute distances
 		function GetIntersectionDistance(Position)
 		{
 			//	get distance from start
@@ -157,17 +196,34 @@
 			if ( Distances[0] != ClosestIntersectionToStart )
 			throw `Closest distance ${Distances} didn't match expected ${ClosestIntersectionToStart}`;
 		}
-		
 		console.log("Closest distance",Distances);
-		return Distances[0];
+
+		
+		
+		//	part 2, calculate earliest intersections
+		//	for each intersection, get wire1's step count to intersection
+		function AppendIntersectionWire1StepCount(Intersection)
+		{
+			const Steps = CountStepsToTarget( Map, Paths[0], Intersection );
+			Intersection.push(Steps);
+			return Intersection;
+		}
+		function CountSteps(Intersection)
+		{
+			return Intersection[2] + Intersection[3];
+		}
+		const IntersectionsWithSteps = Intersections.map(AppendIntersectionWire1StepCount);
+		console.log("Intersections with steps", IntersectionsWithSteps);
+		const TotalSteps = Intersections.map( CountSteps ).sort(sortNumber);
+		console.log("Total steps", TotalSteps);
 	}
 
 
 	async function Run()
 	{
-		//EvaluteMap( [Map0_Wire1, Map0_Wire2], undefined/*[ [7,3],[4,5] ]*/, Map0_Distance );
-		//EvaluteMap( [Map1_Wire1, Map1_Wire2], undefined, Map1_Distance );
-		//EvaluteMap( [Map2_Wire1, Map2_Wire2], undefined, Map2_Distance );
+		EvaluteMap( [Map0_Wire1, Map0_Wire2], undefined/*[ [7,3],[4,5] ]*/, Map0_Distance );
+		EvaluteMap( [Map1_Wire1, Map1_Wire2], undefined, Map1_Distance );
+		EvaluteMap( [Map2_Wire1, Map2_Wire2], undefined, Map2_Distance );
 		EvaluteMap( [Map3_Wire1, Map3_Wire2] );
 
 	}
