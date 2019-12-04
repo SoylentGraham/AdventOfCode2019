@@ -9,7 +9,8 @@
 	
 <script>
 	
-	function IsValidPassword(PasswordNumber)
+	
+	function IsValidPassword(PasswordNumber,TestForAtLeastOnePair=false)
 	{
 		//	must be 6 digits
 		//	numbers must only increment
@@ -44,7 +45,24 @@
 		if ( IncrementCount != Digits.length-1 )
 			return false;
 
+		if ( TestForAtLeastOnePair )
+		{
+			const SeqCount = [];
+			for ( let i=0;	i<10;	i++ )
+				SeqCount[i] = CountNeighbourTests( function(a,b)	{	return a==b && a==i;	}  );
+			
+			//	need at least one sequence that is a PAIR, but not 3x 4x etc
+			//	1 == "one matching pair", 2 would mean NNN (two pairs of N)
+			if ( !SeqCount.some( Count => Count==1 ) )
+				return false;
+		}
+			
 		return true;
+	}
+
+	function IsValidPassword2(PasswordNumber)
+	{
+		return IsValidPassword(PasswordNumber, true);
 	}
 
 	function CountPasswords(Min,Max)
@@ -58,9 +76,27 @@
 		return ValidCount;
 	}
 
+	function CountPassword2s(Min,Max)
+	{
+		let ValidCount = 0;
+		for ( let p=Min;	p<=Max;	p++ )
+		{
+			if ( IsValidPassword2(p) )
+			ValidCount++;
+		}
+		return ValidCount;
+	}
+
 	function UnitTest_Password(PasswordNumber,ExpectedValid)
 	{
 		const Valid = IsValidPassword(PasswordNumber);
+		if ( Valid != ExpectedValid )
+			throw "Password validity wrong";
+	}
+
+	function UnitTest_Password2(PasswordNumber,ExpectedValid)
+	{
+		const Valid = IsValidPassword2(PasswordNumber);
 		if ( Valid != ExpectedValid )
 			throw "Password validity wrong";
 	}
@@ -70,9 +106,17 @@
 		UnitTest_Password(111111,true);
 		UnitTest_Password(223450,false);
 		UnitTest_Password(123789,false);
+		UnitTest_Password(123444,true);	//	part2 password, but would have been true
+
+		UnitTest_Password2(112233,true);
+		UnitTest_Password2(123444,false);
+		UnitTest_Password2(111122,true);
 		
 		const Count = CountPasswords(240298,784956);
 		console.log("Valid password count",Count);
+		
+		const Count2 = CountPassword2s(240298,784956);
+		console.log("Valid password2 count",Count2);
 	}
 
 	Run();
