@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="Editor_win95.css" />
+<style>
+</style>
+</head>
+<body>
+	
+<script>
+	
+	function IsValidPassword(PasswordNumber)
+	{
+		//	must be 6 digits
+		//	numbers must only increment
+		//	must have at least one consequetive digit
+		const Digits = PasswordNumber.toString().split('').map(parseFloat);
+
+		if ( Digits.length != 6 )
+			return false;
+		
+		function CountNeighbourTests(Test)
+		{
+			const ab = Test(Digits[0],Digits[1]);
+			const bc = Test(Digits[1],Digits[2]);
+			const cd = Test(Digits[2],Digits[3]);
+			const de = Test(Digits[3],Digits[4]);
+			const ef = Test(Digits[4],Digits[5]);
+			let Count = 0;
+			Count += ab ? 1 : 0;
+			Count += bc ? 1 : 0;
+			Count += cd ? 1 : 0;
+			Count += de ? 1 : 0;
+			Count += ef ? 1 : 0;
+			return Count;
+		}
+		
+		//	check for any sequential
+		const SequenceCount = CountNeighbourTests( function(a,b)	{	return a==b;	}  );
+		if ( SequenceCount == 0 )
+			return false;
+		
+		const IncrementCount = CountNeighbourTests( function(a,b)	{	return a<=b;	}  );
+		if ( IncrementCount != Digits.length-1 )
+			return false;
+
+		return true;
+	}
+
+	function CountPasswords(Min,Max)
+	{
+		let ValidCount = 0;
+		for ( let p=Min;	p<=Max;	p++ )
+		{
+			if ( IsValidPassword(p) )
+				ValidCount++;
+		}
+		return ValidCount;
+	}
+
+	function UnitTest_Password(PasswordNumber,ExpectedValid)
+	{
+		const Valid = IsValidPassword(PasswordNumber);
+		if ( Valid != ExpectedValid )
+			throw "Password validity wrong";
+	}
+
+	function Run()
+	{
+		UnitTest_Password(111111,true);
+		UnitTest_Password(223450,false);
+		UnitTest_Password(123789,false);
+		
+		const Count = CountPasswords(240298,784956);
+		console.log("Valid password count",Count);
+	}
+
+	Run();
+
+</script>
+	
+</body>
+
