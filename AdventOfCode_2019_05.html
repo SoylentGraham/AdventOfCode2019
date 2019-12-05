@@ -19,13 +19,21 @@
 		const Op_Mult = 2;
 		const Op_ReadInput = 3;
 		const Op_WriteOutput = 4;
-		
+		const Op_JumpIfTrue = 5;
+		const Op_JumpIfFalse = 6;
+		const Op_LessThan = 7;
+		const Op_Equals = 8;
+
 		const Op_ParamCount = {};
 		Op_ParamCount[Op_Halt] = 0;
 		Op_ParamCount[Op_Add] = 3;
 		Op_ParamCount[Op_Mult] = 3;
-		Op_ParamCount[Op_WriteOutput] = 1;
 		Op_ParamCount[Op_ReadInput] = 1;
+		Op_ParamCount[Op_WriteOutput] = 1;
+		Op_ParamCount[Op_JumpIfTrue] = 2;
+		Op_ParamCount[Op_JumpIfFalse] = 2;
+		Op_ParamCount[Op_LessThan] = 3;
+		Op_ParamCount[Op_Equals] = 3;
 
 		function RunOp_Add(ParamModes,Memory,Op,a,b,out)
 		{
@@ -61,7 +69,50 @@
 				throw "Output param is wrongly in immediate mode";
 			Memory[a] = Input;
 		}
-		
+
+	function RunOp_JumpIfTrue(ParamModes,Memory,Op,a,b,Input,OnOutput)
+	{
+		const aval = (ParamModes[0] == ParamMode_Position) ? Memory[a] : a;
+		const bval = (ParamModes[1] == ParamMode_Position) ? Memory[b] : b;
+		if ( aval == 0)
+		return;
+		//	jump to bval
+		return bval;
+	}
+	
+	function RunOp_JumpIfFalse(ParamModes,Memory,Op,a,b,Input,OnOutput)
+	{
+		const aval = (ParamModes[0] == ParamMode_Position) ? Memory[a] : a;
+		const bval = (ParamModes[1] == ParamMode_Position) ? Memory[b] : b;
+		if ( aval != 0)
+		return;
+		//	jump to bval
+		return bval;
+	}
+	
+	function RunOp_LessThan(ParamModes,Memory,Op,a,b,out,Input,OnOutput)
+	{
+		const aval = (ParamModes[0] == ParamMode_Position) ? Memory[a] : a;
+		const bval = (ParamModes[1] == ParamMode_Position) ? Memory[b] : b;
+		const outval = ( aval < bval ) ? 1 : 0;
+		if ( ParamModes[2] == ParamMode_Immediate )
+		throw "Output param is wrongly in immediate mode";
+		Memory[out] = outval;
+	}
+
+	function RunOp_Equals(ParamModes,Memory,Op,a,b,out,Input,OnOutput)
+	{
+		const aval = (ParamModes[0] == ParamMode_Position) ? Memory[a] : a;
+		const bval = (ParamModes[1] == ParamMode_Position) ? Memory[b] : b;
+		const outval = ( aval == bval ) ? 1 : 0;
+		if ( ParamModes[2] == ParamMode_Immediate )
+			throw "Output param is wrongly in immediate mode";
+		Memory[out] = outval;
+	}
+
+	
+		//	return false to stop
+		//	return number to move instruction pointer
 		function RunInstructions(ParamMode,Memory,Op,a,b,c,d,e,f)
 		{
 			//	return false to halt
@@ -79,6 +130,18 @@
 			
 			if ( Op == Op_ReadInput )
 				return RunOp_ReadInput( ...arguments );
+			
+			if ( Op == Op_JumpIfTrue )
+				return RunOp_JumpIfTrue( ...arguments );
+			
+			if ( Op == Op_JumpIfFalse )
+				return RunOp_JumpIfFalse( ...arguments );
+			
+			if ( Op == Op_LessThan )
+				return RunOp_LessThan( ...arguments );
+			
+			if ( Op == Op_Equals )
+				return RunOp_Equals( ...arguments );
 			
 			throw "Unknown op " + Op;
 		}
@@ -108,9 +171,11 @@
 		
 		function RunProgram(Memory,Input)
 		{
+			let LastOutput = undefined;
 			function OnOutput(Value)
 			{
 				console.log("Output Value",Value);
+				LastOutput = Value;
 			}
 			
 			let Position = 0;
@@ -127,19 +192,30 @@
 				Params.push( Input );
 				Params.push( OnOutput );
 				
-				if ( RunInstructions( ParamModes, Memory, Op, ...Params ) === false )
+				const NewPosition = RunInstructions( ParamModes, Memory, Op, ...Params );
+				if ( NewPosition === false )
 					break;
 					
-				Position += 1 + ParamCount;
+				if ( NewPosition !== undefined )
+				{
+					Position = NewPosition;
+				}
+				else
+				{
+					Position += 1 + ParamCount;
+				}
 			}
 			
 			if ( IterationSafety <= 0 )
 				throw "Run() went on too long";
+				
+			return LastOutput;
 		}
 		
-		function UnitTest_Run(Memory,ExpectedMatches)
+		function UnitTest_Run(Memory,ExpectedMatches,Input,ExpectedOutput)
 		{
-			RunProgram( Memory );
+			console.log("Run(input=",Input);
+			const Output = RunProgram( Memory, Input );
 			
 			function TestMemory(Location)
 			{
@@ -148,17 +224,35 @@
 				if ( MemoryValue != ExpectedValue )
 					throw "Expected memory at " + Location + " to be " + ExpectedValue + " but is " + MemoryValue;
 			}
-			//	test expected values
-			Object.keys( ExpectedMatches ).forEach( TestMemory );
 			
+			//	test expected values
+			if ( ExpectedMatches )
+				Object.keys( ExpectedMatches ).forEach( TestMemory );
+			
+			if ( ExpectedOutput !== undefined )
+				if ( Output !== ExpectedOutput )
+					throw "Output != ExpectedOutput";
 		}
 		
 		function Run()
 		{
+			
 			UnitTest_SplitOp('1002',[2,0,1,0]);
 			UnitTest_Run( [1101,100,-1,4,99], {4:99} );
 			
-			RunProgram( DayFivePart1Instructions, 1 );
+			UnitTest_Run( [3,12,6,12,15,1,13,14,13,4,13,99,-1,0,1,9], undefined, 0, 0 );	//	should output 0
+			UnitTest_Run( [3,12,6,12,15,1,13,14,13,4,13,99,-1,0,1,9], undefined, 1, 1 );	//	should output 1
+
+			//	expected 999 if input <8
+			UnitTest_Run( [3,21,1008,21,8,20,1005,20,22,107,8,21,20,1006,20,31,
+			1106,0,36,98,0,0,1002,21,125,20,4,20,1105,1,46,104,
+						   999,1105,1,46,1101,1000,1,20,4,20,1105,1,46,98,99], undefined, 0, 999 );
+			
+			UnitTest_Run( [3,3,1105,-1,9,1101,0,0,12,4,12,99,1], undefined,0,0 );
+			UnitTest_Run( [3,3,1105,-1,9,1101,0,0,12,4,12,99,1], undefined,1,1 );
+
+			RunProgram( DayFivePart1Instructions.slice(), 1 );	//	part1
+			RunProgram( DayFivePart1Instructions.slice(), 5 );
 		}
 		
 		Run();
