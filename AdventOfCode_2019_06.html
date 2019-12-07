@@ -24,6 +24,20 @@
 	K)L
 	`;
 	
+	const TreeLinks_b = `COM)B
+	B)C
+	C)D
+	D)E
+	E)F
+	B)G
+	G)H
+	D)I
+	E)J
+	J)K
+	K)L
+	K)YOU
+	I)SAN`;
+	
 	
 	//	throw if not present
 	function ArrayRemove(Parent,Child,ThrowIfMissing=true)
@@ -175,6 +189,55 @@
 		return DirectOrbits + IndirectOrbits;
 	}
 	
+	function CountJumps(Links,StartName,EndName)
+	{
+		const Tree = ParseLinks(Links);
+		let StartNode = null;
+		let EndNode = null;
+		function Match(Node)
+		{
+			if ( Node.Name == StartName )
+				StartNode = Node;
+			if ( Node.Name == EndName )
+				EndNode = Node;
+		}
+		TraverseTree( Tree, Match );
+		
+		function GetParents(Node)
+		{
+			let Parents = [];
+			let Parent = Node.Parent;
+			while ( Parent )
+			{
+				Parents.push( Parent.Name );
+				Parent = Parent.Parent;
+			}
+			return Parents;
+		}
+		
+		//	get list of parents
+		const StartParents = GetParents(StartNode);
+		const EndParents = GetParents(EndNode);
+
+		//	find common parent
+		//	last in the list is the root, remove tail until last common
+		let LoopSafety=1000;
+		while ( LoopSafety-->0 )
+		{
+			const StartTail = StartParents.length-1;
+			const EndTail = EndParents.length-1;
+			//	break when don't have a common next-parent
+			if ( StartParents[StartTail-1] != EndParents[EndTail-1] )
+				break;
+			StartParents.splice( StartTail, 1 );
+			EndParents.splice( EndTail, 1 );
+		}
+
+		console.log(StartParents,EndParents);
+		const Jumps = StartParents.length + EndParents.length - 2;
+		console.log("Jumps",Jumps);
+	}
+	
 	function UnitTest_OrbitCount(TreeLinks,ExpectedOrbitCount)
 	{
 		const Tree = ParseLinks(TreeLinks);
@@ -185,9 +248,14 @@
 		console.log("Orbits",Orbits);
 	}
 	
+	
 	function Run()
 	{
 		UnitTest_OrbitCount( TreeLinks_a, 42 );
+		UnitTest_OrbitCount( TreeLinks_Part1, 300598 );
+		
+		CountJumps( TreeLinks_b, 'YOU', 'SAN' );
+		CountJumps( TreeLinks_Part1, 'YOU', 'SAN' );
 	}
 	Run();
 	
