@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<link rel="stylesheet" type="text/css" href="Editor_win95.css" />
+		<style>
+			</style>
+	</head>
+	<body>
+
+		<script src="Day6Part1Input.js"></script>
+	<script>
+	
+	//	Parent)Child
+	const TreeLinks_a = `COM)B
+	B)C
+	C)D
+	D)E
+	E)F
+	B)G
+	G)H
+	D)I
+	E)J
+	J)K
+	K)L
+	`;
+	
+	
+	//	throw if not present
+	function ArrayRemove(Parent,Child,ThrowIfMissing=true)
+	{
+		const Index = Parent.indexOf( Child );
+		if ( Index < 0 )
+		{
+			if ( ThrowIfMissing )
+				throw "Element " + Child + " not in parent array " + Parent;
+			return;
+		}
+		Parent.splice( Index, 1 );
+	}
+	
+	function ParseTree(Links)
+	{
+		function Node(Name)
+		{
+			this.Name = Name;
+			this.Children = [];
+			this.Parent = null;
+		}
+
+		const Roots = [];
+		
+		function FindNode(Name,Head)
+		{
+			//	search roots
+			if ( !Head )
+			{
+				for ( let i=0;	i<Roots.length;	i++ )
+				{
+					const Node = FindNode(Name,Roots[i]);
+					if ( Node )
+						return Node;
+				}
+				return false;
+			}
+
+			if ( Head.Name == Name )
+				return Head;
+	
+			//	search children
+			for ( let i=0;	i<Head.Children.length;	i++ )
+			{
+				const Child = Head.Children[i];
+				const Node = FindNode(Name,Child);
+				if ( Node )
+					return Node;
+			}
+			return false;
+		}
+		
+		function MoveNode(Node,NewParent)
+		{
+			//	remove from old parent
+			if ( Node.Parent )
+			{
+				ArrayRemove( Node.Parent.Children, Node );
+				Node.Parent = null;
+			}
+			else
+			{
+				//	remove from roots
+				ArrayRemove( Roots, Node, false );
+			}
+			
+			if ( !NewParent )
+			{
+				Roots.push( Node );
+			}
+			else
+			{
+				NewParent.Children.push( Node );
+				Node.Parent = NewParent;
+			}
+		}
+		
+		function InsertLink(Link)
+		{
+			if ( !Link )
+				return;
+			const ParentName = Link[0];
+			const ChildName = Link[1];
+			let ParentNode = FindNode( ParentName );
+			if ( !ParentNode )
+			{
+				ParentNode = new Node( ParentName );
+				MoveNode( ParentNode, null );
+			}
+			let ChildNode = FindNode( ChildName );
+			if ( !ChildNode )
+			{
+				ChildNode = new Node(ChildName);
+				MoveNode( ChildNode, null );
+			}
+			MoveNode( ChildNode, ParentNode );
+		}
+		Links.forEach( InsertLink );
+
+		//	should just have one root
+		if ( Roots.length != 1 )
+			throw "Wrong number of roots: " + Roots.length;
+		return Roots[0];
+	}
+		
+	function ParseLinks(LinksInput)
+	{
+		function ParseLink(Line)
+		{
+			Line = Line.trim();
+			if ( !Line.length )
+				return;
+			const ParentChild = Line.split(')',2);
+			return ParentChild;
+		}
+		const LinkStrings = LinksInput.split('\n');
+		const Links = LinkStrings.map(ParseLink);
+		const Tree = ParseTree( Links );
+		return Tree;
+	}
+	
+	function TraverseTree(Tree,OnNode)
+	{
+		OnNode( Tree );
+		
+		Tree.Children.forEach( function(Node)	{	TraverseTree( Node, OnNode );	} );
+	}
+	
+	function CountOrbits(Tree)
+	{
+		let DirectOrbits = 0;
+		let IndirectOrbits = 0;
+		function OnNode(Node)
+		{
+			//	direct = parent
+			//	indirect = # parent's parent's
+			let Parent = Node.Parent;
+			let ParentCount = 0;
+			while ( Parent )
+			{
+				ParentCount++;
+				Parent = Parent.Parent;
+			}
+			DirectOrbits += (ParentCount==0) ? 0 : 1;
+			IndirectOrbits += Math.max( 0, ParentCount - 1 );
+		}
+		TraverseTree( Tree, OnNode );
+		return DirectOrbits + IndirectOrbits;
+	}
+	
+	function UnitTest_OrbitCount(TreeLinks,ExpectedOrbitCount)
+	{
+		const Tree = ParseLinks(TreeLinks);
+		console.log(Tree);
+		const Orbits = CountOrbits(Tree);
+		if ( Orbits != ExpectedOrbitCount )
+			throw "Wrong number of orbits " + Orbits + " expected " + ExpectedOrbitCount;
+		console.log("Orbits",Orbits);
+	}
+	
+	function Run()
+	{
+		UnitTest_OrbitCount( TreeLinks_a, 42 );
+	}
+	Run();
+	
+	
+			</script>
+	</body>
+	
+	
+</html>
+
+
